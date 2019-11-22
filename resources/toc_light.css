@@ -1,0 +1,14 @@
+
+/*目录形成的范围*/
+.tocDiv {
+    padding: 10px;
+    /*height: 100%;*/
+    position: fixed;
+    overflow-y:hidden;
+    overflow-x:hidden;
+    /*top: 80px;*/
+    right: 0px;
+    /*width: 300px;*/
+    display: none;
+    background-color: rgba(255, 255, 255, 0.5);
+}
