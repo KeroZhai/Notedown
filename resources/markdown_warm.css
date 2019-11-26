@@ -297,3 +297,8 @@ p{
     font-size:1.2em;
 }
 
+img {
+  position: relative;
+   left: 50%;
+    -ms-transform: translate(-50%, 0); /* IE 9 */
+}

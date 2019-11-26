@@ -420,3 +420,9 @@ table tr:last-child td:last-child {
     -webkit-border-radius: 0 0 6px 0;
     border-radius: 0 0 6px 0;
 }
+
+img {
+  position: relative;
+   left: 50%;
+    -ms-transform: translate(-50%, 0); /* IE 9 */
+}
