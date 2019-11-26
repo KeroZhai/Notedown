@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.TreeColumnLayout;
@@ -22,6 +23,13 @@ import org.eclipse.swt.custom.CTabFolderEvent;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.custom.VerifyKeyListener;
+import org.eclipse.swt.dnd.Clipboard;
+import org.eclipse.swt.dnd.DND;
+import org.eclipse.swt.dnd.ImageTransfer;
+import org.eclipse.swt.dnd.RTFTransfer;
+import org.eclipse.swt.dnd.TextTransfer;
+import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MenuDetectEvent;
@@ -32,12 +40,15 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.DeviceData;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.ImageLoader;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -445,16 +456,20 @@ public class Notes {
                     CTabItem item = null;
                     CTabItem first = tabFolder.getItem(0);
                     CTabItem last = tabFolder.getItem(tabFolder.getItemCount() - 2);
+                    if (first == last) {
+                        return;
+                    }
                     if (p.x > last.getBounds().x + last.getBounds().width) {
                         item = last;
                     } else if (p.x < first.getBounds().x) {
                         item = first;
                     } else {
                         if ((p.x >= current.getBounds().x + current.getBounds().width / 2)) {
-                            item = tabFolder
-                                    .getItem(new Point(current.getBounds().x + current.getBounds().width + 1, 1));
-                        } else {
+                            
                             item = current;
+                        } else {
+                            item = tabFolder
+                                    .getItem(new Point(current.getBounds().x - 1, 1));
                         }
 
                     }
@@ -590,6 +605,35 @@ public class Notes {
         addMenuItemForFontMenu(fontMenu, "Larger", 2);
         addMenuItemForFontMenu(fontMenu, "Smaller", -2);
         MenuItem separator3 = new MenuItem(editorPopupMenu, SWT.SEPARATOR);
+        MenuItem insertMenuItem = new MenuItem(editorPopupMenu, SWT.CASCADE);
+        insertMenuItem.setText("Insert...");
+        Menu insertMenu = new Menu(shell, SWT.DROP_DOWN);
+        insertMenuItem.setMenu(insertMenu);
+        MenuItem link = new MenuItem(insertMenu, SWT.PUSH);
+        link.setText("Link");
+        link.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                styledText.insert("[Alt Text](enter URL here)");
+                styledText.setSelectionRange(styledText.getSelectionRange().x + 11, 14);
+            }
+        });
+        MenuItem image = new MenuItem(insertMenu, SWT.PUSH);
+        image.setText("Image");
+        image.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                insertImage(styledText);
+            }
+        });
+        MenuItem table = new MenuItem(insertMenu, SWT.PUSH);
+        table.setText("Table");
+        table.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                insertTable(styledText);
+            }
+        });
         MenuItem wrapWithMenuItem = new MenuItem(editorPopupMenu, SWT.CASCADE);
         Menu wrapWithMenu = new Menu(shell, SWT.DROP_DOWN);
         wrapWithMenuItem.setText("Wrap/Unwrap With");
@@ -604,20 +648,68 @@ public class Notes {
         styledText.addMenuDetectListener(new MenuDetectListener() {
             @Override
             public void menuDetected(MenuDetectEvent arg0) {
-//                for (MenuItem menuItem : wrapWithMenu.getItems()) {
-//                    menuItem.dispose();
-//                }
-                
                 boolean isTextSelected = styledText.isTextSelected();
                 cut.setEnabled(isTextSelected);
                 copy.setEnabled(isTextSelected);
                 wrapWithMenuItem.setEnabled(isTextSelected);
-//                for (MenuItem menuItem : wrapWithMenu.getItems()) {
-//                    menuItem.setEnabled(enable);
-//                }
             }
         });
         
+    }
+    
+    private void insertImage(StyledText styledText) {
+        FileDialog fileDialog = new FileDialog(getShell());
+        fileDialog.setFilterExtensions(new String[] { "Images (*.jpg;*.jpeg;*.png;*.bmp)", "*.jpg", "*.jpeg", "*.png", "*.bmp"});
+        fileDialog.setText("Insert Image");
+        String imagePath = null;
+        if ((imagePath = fileDialog.open()) != null) {
+            String insertText = "![Alt Text](" + imagePath + " \"\")";
+            styledText.insert(insertText);
+            styledText.setSelectionRange(styledText.getSelectionRange().x + (insertText.length() - 2), 0);
+        }
+    }
+    
+    private void insertTable(StyledText styledText) {
+        InputDialog inputDialog = new InputDialog(getShell(), "Insert Table", "Rows and cols ", "1,1", new IInputValidator() {
+            
+            @Override
+            public String isValid(String rowsAndCols) {
+                if (rowsAndCols.matches("([0-9]+,( *)[0-9]+){1}")) {
+                    String[] split = rowsAndCols.split(",");
+                    int rowNum = Integer.valueOf(split[0]);
+                    int colNum = Integer.valueOf(split[1]);
+                    if (rowNum > 0 && rowNum <= 20 && colNum > 0 && colNum <=10) {
+                        return null;
+                    } else {
+                        return "Range limit : (1~20, 1~10)";
+                    }
+                } else if (rowsAndCols.isEmpty()) {
+                    return null;
+                }
+                return "Invalid input";
+            }
+        });
+        if (inputDialog.open() == InputDialog.OK) {
+            String rowsAndCols = inputDialog.getValue();
+            String[] split = rowsAndCols.split(",");
+            int rowNum = Integer.valueOf(split[0]);
+            int colNum = Integer.valueOf(split[1]);
+            StringBuilder tableContent = new StringBuilder("\n\n");
+            addTableContent(tableContent, "head", 1, colNum);
+            addTableContent(tableContent, "---", 1, colNum);
+            addTableContent(tableContent, "   ", rowNum, colNum);
+            styledText.insert(tableContent.toString() + "\n");
+            styledText.setSelectionRange(styledText.getSelectionRange().x + 2, 4);
+        }
+    }
+    
+    private void addTableContent(StringBuilder tableContent, String colContent, int rowNum, int colNum) {
+        for (int i = 0; i < rowNum; i++) {
+            for (int j = 0; j < colNum; j++) {
+                tableContent.append("| " + colContent+ " ");
+            }
+            tableContent.append("|\n");
+        }
     }
     
     void addMenuItemForFontMenu(Menu parentMenu, String name, int sizeChange) {
@@ -915,6 +1007,9 @@ public class Notes {
         CTabItem source = new CTabItem(cTabFolder, SWT.NONE);
         source.setText("Source");
         StyledText content = new StyledText(cTabFolder, SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
+        if (!note.canEdit()) {
+            content.setEditable(false);
+        }
         content.setIndent(4);
         content.addKeyListener(new KeyListener() {
 
@@ -928,6 +1023,37 @@ public class Notes {
                 if (isCtrl) {
                     if (e.keyCode == 'a') {
                         content.selectAll();
+                    }
+                }
+            }
+        });
+        content.addVerifyKeyListener(new VerifyKeyListener() {
+            
+            @Override
+            public void verifyKey(VerifyEvent event) {
+                boolean isCtrl = (event.stateMask & SWT.CTRL) > 0;
+                if (isCtrl) {
+                    if (event.keyCode == 'v') {
+                        Clipboard clipboard = new Clipboard(getDisplay());
+                        ImageTransfer imageTransfer = ImageTransfer.getInstance();
+                        ImageData imageData = (ImageData) clipboard.getContents(imageTransfer);
+                        if (imageData != null) {
+                            ImageLoader saver = new ImageLoader();
+                            saver.data = new ImageData[] { imageData };
+                            FileDialog fileDialog = new FileDialog(getShell(), SWT.SAVE);
+                            fileDialog.setText("Save Copied Image");
+                            fileDialog.setFileName("image.png");
+                            fileDialog.setFilterExtensions(new String[] { "*.png" });
+                            fileDialog.setOverwrite(true);
+                            String path2Save = fileDialog.open();
+                            if (path2Save != null) {
+                                if (!path2Save.endsWith(".png"))
+                                    path2Save += ".png";
+                                saver.save(path2Save, SWT.IMAGE_PNG);
+                                String toMarkdown = "![Alt Text](" + path2Save + " \"Screenshot\")";
+                                clipboard.setContents(new String[] { toMarkdown }, new Transfer[] { TextTransfer.getInstance() });
+                            }
+                        }
                     }
                 }
             }
@@ -960,6 +1086,13 @@ public class Notes {
         UndoRedoEnhancement undoRedoEnhancement = new UndoRedoEnhancement(content);
         content.setData(undoRedoEnhancement);
         Browser browser = new Browser(cTabFolder, SWT.NONE);
+        browser.addMenuDetectListener(new MenuDetectListener() {
+            
+            @Override
+            public void menuDetected(MenuDetectEvent arg0) {
+                arg0.doit = false;
+            }
+        });
         if (note.isSaveAllowed()) {
             content.addModifyListener(new ModifyListener() {
                 @Override
@@ -1078,6 +1211,9 @@ public class Notes {
         source.setControl(content);
         tab.setControl(cTabFolder);
         cTabFolder.setRedraw(true);
+        if (note.getFile() == null) {
+            cTabFolder.setSelection(1);
+        }
     }
     
     CTabItem getCurrentSelectedTab() {
