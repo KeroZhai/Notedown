@@ -14,7 +14,7 @@ public class NotesLableProvider extends CellLabelProvider {
         Object element = cell.getElement();
         String text = "";
         if (element instanceof Note) {
-            text = ((Note) element).getShortenDisplayName();
+            text = ((Note) element).getDisplayName();
         }
         cell.setText(text);
     }
