@@ -52,6 +52,7 @@ Notedown is developed with SWT and JFace, and the core part which parses Markdow
     * Delete the whole line by pressing `Ctrl+D`.
 * Changes:
     * File name ends with "..." now if it's too long(more than 12 characters).
+    * New line indents the same as the previous line.
 * Bug Fixes:
     * Fix the bug that a file can be opened multiple times.
     * Correct the wrong part about sublists in `Welcome.md`.
