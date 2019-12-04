@@ -28,21 +28,23 @@ public class DeleteNoteContributionItem extends ContributionItem {
 
 	private Notes notes;
 	private MenuItem menuItem;
-	private boolean enabled = false;
 	private boolean deleteFile = false;
+	private ISelectionChangedListener selectionChangedListener;
 
 	public DeleteNoteContributionItem(Notes notes) {
 		this.notes = notes;
-		notes.getTreeViewer().addSelectionChangedListener(new ISelectionChangedListener() {
+		this.selectionChangedListener = new ISelectionChangedListener() {
 
-			@Override
-			public void selectionChanged(SelectionChangedEvent arg0) {
-				System.out.println("SELECTED");
-				if (menuItem != null) {
-					menuItem.setEnabled(!notes.getTreeViewer().getSelection().isEmpty());
-				}
-			}
-		});
+            @Override
+            public void selectionChanged(SelectionChangedEvent arg0) {
+                if (menuItem != null && !menuItem.isDisposed()) {
+                    menuItem.setEnabled(!notes.getTreeViewer().getSelection().isEmpty());
+                } else {
+                    notes.getTreeViewer().removeSelectionChangedListener(this);
+                }
+            }
+        };
+		notes.getTreeViewer().addSelectionChangedListener(selectionChangedListener);
 	}
 
 	@Override
@@ -54,7 +56,7 @@ public class DeleteNoteContributionItem extends ContributionItem {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Note note = (Note) notes.getTreeViewer().getStructuredSelection().getFirstElement();
-				 MessageDialog messageDialog = new MessageDialog(notes.getShell(), "Confirm Delete", null,  "Are you sure you want to delete note \"" + note.getName() + "\"?",
+				 MessageDialog messageDialog = new MessageDialog(notes.getShell(), "Confirm Delete", null,  "Are you sure you want to delete note \"" + note.getDisplayName() + "\"?",
 			                MessageDialog.QUESTION, 0, "Yes", "Cancel") {
 			            @Override
 			            protected Control createCustomArea(Composite parent) {

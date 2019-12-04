@@ -422,7 +422,6 @@ table tr:last-child td:last-child {
 }
 
 img {
-  position: relative;
-   left: 50%;
-    -ms-transform: translate(-50%, 0); /* IE 9 */
+ display: block;
+    margin: 0 auto;
 }

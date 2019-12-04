@@ -1,34 +1,28 @@
 package com.keroz.notes.model;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 
 import com.keroz.notes.util.FileUtils;
 
-public class Note implements INotesElement {
+public class Note extends NotesElement {
 
     private File file;
     private String content;
-    private String name;
     private String path;
     private Category category;
-    private boolean isOpened = false;
-    private boolean isSaved = false;
-    private boolean isEdited = false;
+    private boolean opened = false;
+    private boolean saved = false;
+    private boolean edited = false;
+    private boolean newlyEdited = false;
     public final static Note WELCOME = new Note(new File(System.getProperty("user.dir") + "\\welcome.md")) {
         @Override
         public boolean isSaveAllowed() {
+            return false;
+        }
+        
+        @Override
+        public boolean canEdit() {
             return false;
         }
     };
@@ -40,10 +34,10 @@ public class Note implements INotesElement {
     public Note(File file) {
         this.file = file;
         if (file != null) {
-            name = getSimpleName(file.getName());
+            setDisplayName(getSimpleName(file.getName()));
             path = file.getAbsolutePath();
         } else {
-            name = "Untitled";
+            setDisplayName("Untitled");
             path = "";
         }
     }
@@ -62,7 +56,7 @@ public class Note implements INotesElement {
 
     public void setFile(File file) {
         this.file = file;
-        this.name = getSimpleName(file.getName());
+        setDisplayName(getSimpleName(file.getName()));
         this.path = file.getAbsolutePath();
     }
 
@@ -73,14 +67,6 @@ public class Note implements INotesElement {
 
     public File getFile() {
         return file;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public void setContent(String content) {
@@ -95,28 +81,36 @@ public class Note implements INotesElement {
         return path;
     }
 
-    public void setIsEdited(boolean isEdited) {
-        this.isEdited = isEdited;
+    public void setEdited(boolean isEdited) {
+        this.edited = isEdited;
     }
 
     public boolean isEdited() {
-        return isEdited;
+        return edited;
     }
 
-    public void setIsSaved(boolean isSaved) {
-        this.isSaved = isSaved;
+    public boolean isNewlyEdited() {
+        return newlyEdited;
+    }
+
+    public void setNewlyEdited(boolean newlyEdited) {
+        this.newlyEdited = newlyEdited;
+    }
+
+    public void setSaved(boolean isSaved) {
+        this.saved = isSaved;
     }
 
     public boolean isSaved() {
-        return isSaved;
+        return saved;
     }
 
-    public void setIsOpened(boolean isOpened) {
-        this.isOpened = isOpened;
+    public void setOpened(boolean isOpened) {
+        this.opened = isOpened;
     }
 
     public boolean isOpened() {
-        return isOpened;
+        return opened;
     }
 
     public void save() {
@@ -149,4 +143,31 @@ public class Note implements INotesElement {
     public boolean isSaveAllowed() {
         return true;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((file == null) ? 0 : file.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Note other = (Note) obj;
+        if (file == null) {
+            if (other.file != null)
+                return false;
+        } else if (!file.equals(other.file))
+            return false;
+        return true;
+    }
+    
+    
 }

@@ -82,7 +82,7 @@ public class NotesManager {
             }
 	        String[] split = line.split(",");
             Note note = new Note(new File(split[1]));
-            note.setIsOpened(Boolean.valueOf(split[0]));
+            note.setOpened(Boolean.valueOf(split[0]));
             notes.add(note);
 	    }
 	}

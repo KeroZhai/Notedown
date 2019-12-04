@@ -62,9 +62,12 @@ pre {
     white-space: pre-wrap;
 }
 code {
+	padding:2px 5px 2px 5px;
+	color: #d1d9e1;
     font-family: Consolas, Monaco, Andale Mono, monospace;
     line-height: 1.5;
-    font-size: 13px;
+    font-size: 14px;
+    background-color: #474949;
 }
 aside {
     display: block;
@@ -277,7 +280,6 @@ table tr:nth-child(2n) {
 }
 
 img {
-  position: relative;
-   left: 50%;
-    -ms-transform: translate(-50%, 0); /* IE 9 */
+  display: block;
+    margin: 0 auto;
 }

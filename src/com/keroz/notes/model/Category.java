@@ -2,7 +2,7 @@ package com.keroz.notes.model;
 
 import java.util.List;
 
-public class Category implements INotesElement {
+public class Category extends NotesElement {
 	
 	private String name;
 	private List<Note> notes;
@@ -24,5 +24,25 @@ public class Category implements INotesElement {
 	public boolean isSaveAllowed() {
 		return false;
 	}
+
+
+    public String getName() {
+        return name;
+    }
+
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    public List<Note> getNotes() {
+        return notes;
+    }
+
+
+    public void setNotes(List<Note> notes) {
+        this.notes = notes;
+    }
 	
 }
