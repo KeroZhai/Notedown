@@ -84,13 +84,13 @@ import com.keroz.notes.util.Settings;
 import com.keroz.notes.util.ThemeUtils;
 
 public class Notes {
-    
+
     public static final int RUNNING = 0;
     public static final int CLOSED = 1;
     public static final int RESTART = 2;
-    
+
     private int status = CLOSED;
-    
+
     private static final int DEFAULT_WIDTH = 1440;
     private static final int DEFALUT_HEIGHT = 900;
 
@@ -102,9 +102,12 @@ public class Notes {
     private Color sourceBackgroundColor;
     private Color globalForegroundColor;
     private Color globalBackgroundColor;
-   
+
     private Font font;
 
+    private MenuItem save;
+    private MenuItem saveAs;
+    private MenuItem export;
     private Display display;
     private Shell shell;
     private TreeViewer treeViewer;
@@ -127,9 +130,66 @@ public class Notes {
         this(DEFAULT_WIDTH, DEFALUT_HEIGHT);
     }
 
-    private MenuItem save;
-    private MenuItem saveAs;
-    private MenuItem export;
+    void init() {
+            /*
+             * For s-leak
+             */
+            DeviceData data = new DeviceData();
+            data.tracking = true;
+            display = new Display(data);
+            /*
+             * Uncomment to enable s-leak
+             */
+    //        Sleak sleak = new Sleak();
+    //        sleak.open();
+            theme = Settings.getProperty(Settings.THEME);
+            treeForegroundColor = new Color(display, ThemeUtils.getTreeForegroundRgb());
+            treeBackgroundColor = new Color(display, ThemeUtils.getTreeBackgroundRgb());
+            sourceForegroundColor = new Color(display, ThemeUtils.getSourceForegroundRgb());
+            sourceBackgroundColor = new Color(display, ThemeUtils.getSourceBackgroundRgb());
+            globalForegroundColor = new Color(display, ThemeUtils.getGlobalForegroundRGB());
+            globalBackgroundColor = new Color(display, ThemeUtils.getGlobalBackgroundRGB());
+            font = new Font(this.display, Settings.getProperty(Settings.FONT_TYPE),
+                    Settings.getProperty(Settings.FONT_SIZE), Settings.getProperty(Settings.FONT_STYLE));
+            shell = new Shell(display);
+            shell.setText("Notedown");
+            shell.setImage(new Image(display, Resources.ICON_PATH));
+            Rectangle area = display.getClientArea();
+            int x = (area.width - width) / 2;
+            int y = (area.height - height) / 2;
+            shell.setBounds(x, y, width, height);
+            /**
+             * 注意这里要用SWT.Close而不是SWT.CLOSE
+             */
+            shell.addListener(SWT.Close, new Listener() {
+    
+                @Override
+                public void handleEvent(Event event) {
+                    event.doit = confirmClose();
+                    if (!event.doit) {
+                        return;
+                    }
+                    event.doit = isReadyToCloseShell();
+                    if (event.doit) {
+                        Settings.updateSettings();
+                        status = CLOSED;
+                    }
+    
+    //				for (CTabItem tab : tabFolder.getItems()) {
+    //					Note note = (Note) tab.getData();
+    //					if (note != null && note.getIsEdited()) {
+    //						boolean doSave = false;
+    //						doSave = MessageDialog.openConfirm(shell, "Save Note", "\"" + note.getName().substring(1) + "\" has been modified. Do you want to save changes?");
+    //						if (doSave) {
+    //							event.doit = false;
+    //							StyledText content = (StyledText) tab.getControl();
+    //							doSave(note, content);
+    //						}
+    //					}
+    //				}
+                }
+            });
+        }
 
     /**
      * 挂载主菜单栏
@@ -211,7 +271,7 @@ public class Notes {
                 close();
             }
         });
-        
+
         MenuItem editMenuItem = new MenuItem(menuBar, SWT.CASCADE);
         editMenuItem.setText("&Edit");
         editMenuItem.setEnabled(false);
@@ -368,9 +428,10 @@ public class Notes {
                     saveAs.setEnabled(false);
 //                    export.setEnabled(false);
                 }
-                boolean isSourcePageActive = ((CTabFolder) tabFolder.getSelection().getControl()).getSelectionIndex() == 1;
+                boolean isSourcePageActive = ((CTabFolder) tabFolder.getSelection().getControl())
+                        .getSelectionIndex() == 1;
                 shell.getMenuBar().getItem(1).setEnabled(isSourcePageActive);
-                
+
             }
         });
         tabFolder.addCTabFolder2Listener(new CTabFolder2Adapter() {
@@ -379,7 +440,7 @@ public class Notes {
                 CTabItem tabToClose = (CTabItem) event.item;
                 event.doit = isReadyToCloseTab(tabToClose);
                 if (event.doit) {
-                    Note note= (Note) tabToClose.getData();
+                    Note note = (Note) tabToClose.getData();
                     note.setOpened(false);
                     NotesManager.getManager().update();
                 }
@@ -466,11 +527,10 @@ public class Notes {
                         item = first;
                     } else {
                         if ((p.x >= current.getBounds().x + current.getBounds().width / 2)) {
-                            
+
                             item = current;
                         } else {
-                            item = tabFolder
-                                    .getItem(new Point(current.getBounds().x - 1, 1));
+                            item = tabFolder.getItem(new Point(current.getBounds().x - 1, 1));
                         }
 
                     }
@@ -533,6 +593,23 @@ public class Notes {
         tabFolder.addListener(SWT.MouseEnter, listener);
     }
 
+    private void enableDropDown() {
+        DropTarget target = new DropTarget(getShell(),
+                DND.DROP_DEFAULT | DND.DROP_MOVE | DND.DROP_COPY | DND.DROP_LINK);
+        target.setTransfer(new Transfer[] { FileTransfer.getInstance() });
+        target.addDropListener(new DropTargetAdapter() {
+    
+            public void drop(DropTargetEvent e) {
+                String[] paths = (String[]) e.data;
+                String filePath = null;
+                if (paths.length == 1 && (filePath = paths[0]).endsWith(".md")) {
+                    openFile(filePath);
+                } else {
+                }
+            }
+        });
+    }
+
     void hookContextMenuForTree() {
         MenuManager treeMenuManager = new MenuManager("#PopupMenu");
 //        DeleteNoteContributionItem deleteNoteContributionItem = new DeleteNoteContributionItem(this);
@@ -560,7 +637,7 @@ public class Notes {
         Menu contextMenu = treeMenuManager.createContextMenu(tree);
         tree.setMenu(contextMenu);
     }
-    
+
     void hookContextMenuForEditor(StyledText styledText) {
         Menu editorPopupMenu = new Menu(shell, SWT.POP_UP);
         MenuItem undo = new MenuItem(editorPopupMenu, SWT.PUSH);
@@ -579,7 +656,8 @@ public class Notes {
         cut.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                styledText.cut();;
+                styledText.cut();
+                ;
             }
         });
         MenuItem copy = new MenuItem(editorPopupMenu, SWT.PUSH);
@@ -655,12 +733,13 @@ public class Notes {
                 wrapWithMenuItem.setEnabled(isTextSelected);
             }
         });
-        
+
     }
-    
+
     private void insertImage(StyledText styledText) {
         FileDialog fileDialog = new FileDialog(getShell());
-        fileDialog.setFilterExtensions(new String[] { "Images (*.jpg;*.jpeg;*.png;*.bmp)", "*.jpg", "*.jpeg", "*.png", "*.bmp"});
+        fileDialog.setFilterExtensions(
+                new String[] { "Images (*.jpg;*.jpeg;*.png;*.bmp)", "*.jpg", "*.jpeg", "*.png", "*.bmp" });
         fileDialog.setText("Insert Image");
         String imagePath = null;
         if ((imagePath = fileDialog.open()) != null) {
@@ -669,27 +748,28 @@ public class Notes {
             styledText.setSelectionRange(styledText.getSelectionRange().x + (insertText.length() - 2), 0);
         }
     }
-    
+
     private void insertTable(StyledText styledText) {
-        InputDialog inputDialog = new InputDialog(getShell(), "Insert Table", "Rows and cols ", "1,1", new IInputValidator() {
-            
-            @Override
-            public String isValid(String rowsAndCols) {
-                if (rowsAndCols.matches("([0-9]+,( *)[0-9]+){1}")) {
-                    String[] split = rowsAndCols.split(",");
-                    int rowNum = Integer.valueOf(split[0]);
-                    int colNum = Integer.valueOf(split[1]);
-                    if (rowNum > 0 && rowNum <= 20 && colNum > 0 && colNum <=10) {
-                        return null;
-                    } else {
-                        return "Range limit : (1~20, 1~10)";
+        InputDialog inputDialog = new InputDialog(getShell(), "Insert Table", "Rows and cols ", "1,1",
+                new IInputValidator() {
+
+                    @Override
+                    public String isValid(String rowsAndCols) {
+                        if (rowsAndCols.matches("([0-9]+,( *)[0-9]+){1}")) {
+                            String[] split = rowsAndCols.split(",");
+                            int rowNum = Integer.valueOf(split[0]);
+                            int colNum = Integer.valueOf(split[1]);
+                            if (rowNum > 0 && rowNum <= 20 && colNum > 0 && colNum <= 10) {
+                                return null;
+                            } else {
+                                return "Range limit : (1~20, 1~10)";
+                            }
+                        } else if (rowsAndCols.isEmpty()) {
+                            return null;
+                        }
+                        return "Invalid input";
                     }
-                } else if (rowsAndCols.isEmpty()) {
-                    return null;
-                }
-                return "Invalid input";
-            }
-        });
+                });
         if (inputDialog.open() == InputDialog.OK) {
             String rowsAndCols = inputDialog.getValue();
             String[] split = rowsAndCols.split(",");
@@ -703,16 +783,16 @@ public class Notes {
             styledText.setSelectionRange(styledText.getSelectionRange().x + 2, 4);
         }
     }
-    
+
     private void addTableContent(StringBuilder tableContent, String colContent, int rowNum, int colNum) {
         for (int i = 0; i < rowNum; i++) {
             for (int j = 0; j < colNum; j++) {
-                tableContent.append("| " + colContent+ " ");
+                tableContent.append("| " + colContent + " ");
             }
             tableContent.append("|\n");
         }
     }
-    
+
     void addMenuItemForFontMenu(Menu parentMenu, String name, int sizeChange) {
         MenuItem menuItem = new MenuItem(parentMenu, SWT.PUSH);
         menuItem.setText(name);
@@ -731,7 +811,7 @@ public class Notes {
             }
         });
     }
-    
+
     void refreshFont(Font font, Color fontColor) {
         if (fontColor != null) {
             sourceForegroundColor.dispose();
@@ -747,7 +827,7 @@ public class Notes {
             }
         }
     }
-    
+
     void addMenuItemForWrapWithMenu(Menu parentMenu, StyledText styledText, MarkdownHelper helper) {
         MenuItem menuItem = new MenuItem(parentMenu, SWT.PUSH);
         menuItem.setText(helper.getType());
@@ -770,7 +850,7 @@ public class Notes {
             }
         });
     }
-    
+
     void fillThemeMenu(Menu parentMenu) {
         addThemeMemuItem(parentMenu, ThemeUtils.WARM_THEME);
         addThemeMemuItem(parentMenu, ThemeUtils.LIGHT_THEME);
@@ -779,7 +859,7 @@ public class Notes {
             theme.setSelection(Settings.getProperty(Settings.THEME).equals(theme.getText()));
         }
     }
-    
+
     void addThemeMemuItem(Menu parentMenu, String theme) {
         MenuItem menuItem = new MenuItem(parentMenu, SWT.RADIO);
         menuItem.setText(theme);
@@ -788,7 +868,8 @@ public class Notes {
             public void widgetSelected(SelectionEvent e) {
                 if (menuItem.getSelection()) {
                     Settings.setProperty(Settings.THEME, theme);
-                    if (MessageDialog.openConfirm(shell, "Theme Change", "A restart is required for the theme change to take full effect.\nWould you like to restart now?")) {
+                    if (MessageDialog.openConfirm(shell, "Theme Change",
+                            "A restart is required for the theme change to take full effect.\nWould you like to restart now?")) {
                         restart();
                     }
                 }
@@ -821,8 +902,7 @@ public class Notes {
                 button.addSelectionListener(new SelectionAdapter() {
                     @Override
                     public void widgetSelected(SelectionEvent e) {
-                        Settings.setProperty(Settings.DIRECTLY_EXIT,
-                                !Settings.getProperty(Settings.DIRECTLY_EXIT));
+                        Settings.setProperty(Settings.DIRECTLY_EXIT, !Settings.getProperty(Settings.DIRECTLY_EXIT));
                     }
                 });
                 return button;
@@ -846,7 +926,7 @@ public class Notes {
             closeWithoutConfirm();
         }
     }
-    
+
     public void closeWithoutConfirm() {
         if (isReadyToCloseShell()) {
             Settings.updateSettings();
@@ -854,14 +934,14 @@ public class Notes {
             status = CLOSED;
         }
     }
-    
+
     public void restart() {
         closeWithoutConfirm();
         if (status == CLOSED) {
             status = RESTART;
         }
     }
-    
+
     private boolean isReadyToCloseShell() {
         boolean isReady = true;
         for (CTabItem tab : tabFolder.getItems()) {
@@ -878,8 +958,8 @@ public class Notes {
         Note note = (Note) tab.getData();
         if (note != null && note.isEdited()) {
             int result = MessageDialog.open(SWT.ICON_QUESTION, shell, "Save Note",
-                    "\"" + note.getDisplayName() + "\" has been modified. Do you want to save changes?", SWT.NONE, "Save",
-                    "Don't save", "Cancel");
+                    "\"" + note.getDisplayName() + "\" has been modified. Do you want to save changes?", SWT.NONE,
+                    "Save", "Don't save", "Cancel");
             switch (result) {
             case 0:
                 doSave();
@@ -894,83 +974,6 @@ public class Notes {
         return isReady;
     }
 
-    void init() {
-        /*
-         * For s-leak
-         */
-        DeviceData data = new DeviceData();
-        data.tracking = true;
-        display = new Display(data);
-        /*
-         * Uncomment to enable s-leak
-         */
-//        Sleak sleak = new Sleak();
-//        sleak.open();
-        theme = Settings.getProperty(Settings.THEME);
-        treeForegroundColor = new Color(display, ThemeUtils.getTreeForegroundRgb());
-        treeBackgroundColor = new Color(display, ThemeUtils.getTreeBackgroundRgb());
-        sourceForegroundColor = new Color(display, ThemeUtils.getSourceForegroundRgb());
-        sourceBackgroundColor = new Color(display, ThemeUtils.getSourceBackgroundRgb());
-        globalForegroundColor = new Color(display, ThemeUtils.getGlobalForegroundRGB());
-        globalBackgroundColor = new Color(display, ThemeUtils.getGlobalBackgroundRGB());
-        font = new Font(this.display, Settings.getProperty(Settings.FONT_TYPE), Settings.getProperty(Settings.FONT_SIZE), Settings.getProperty(Settings.FONT_STYLE));
-        shell = new Shell(display);
-        shell.setText("Notedown");
-        shell.setImage(new Image(display, Resources.ICON_PATH));
-        Rectangle area = display.getClientArea();
-        int x = (area.width - width) / 2;
-        int y = (area.height - height) / 2;
-        shell.setBounds(x, y, width, height);
-        /**
-         * 注意这里要用SWT.Close而不是SWT.CLOSE
-         */
-        shell.addListener(SWT.Close, new Listener() {
-
-            @Override
-            public void handleEvent(Event event) {
-                event.doit = confirmClose();
-                if (!event.doit) {
-                    return;
-                }
-                event.doit = isReadyToCloseShell();
-                if (event.doit) {
-                    Settings.updateSettings();
-                    status = CLOSED;
-                }
-                
-//				for (CTabItem tab : tabFolder.getItems()) {
-//					Note note = (Note) tab.getData();
-//					if (note != null && note.getIsEdited()) {
-//						boolean doSave = false;
-//						doSave = MessageDialog.openConfirm(shell, "Save Note", "\"" + note.getName().substring(1) + "\" has been modified. Do you want to save changes?");
-//						if (doSave) {
-//							event.doit = false;
-//							StyledText content = (StyledText) tab.getControl();
-//							doSave(note, content);
-//						}
-//					}
-//				}
-            }
-        });
-    }
-    
-    private void enableDropDown() {
-        DropTarget target = new DropTarget(getShell(), DND.DROP_DEFAULT | DND.DROP_MOVE | DND.DROP_COPY
-                | DND.DROP_LINK);
-        target.setTransfer(new Transfer[] { FileTransfer.getInstance() });
-        target.addDropListener(new DropTargetAdapter() {
-
-            public void drop(DropTargetEvent e) {
-                String[] paths=(String[]) e.data;
-                String filePath = null;
-                if (paths.length == 1 && (filePath = paths[0]).endsWith(".md")){
-                    openFile(filePath);
-                } else{
-                }
-            }
-        });
-    }
-
     void openNewNote() {
         Note note = Note.newNote();
 //		((NotesManager) treeViewer.getInput()).addNote(note);
@@ -983,7 +986,7 @@ public class Notes {
         String filePath = fileDialog.open();
         openFile(filePath);
     }
-    
+
     private void openFile(String filePath) {
         if (filePath != null) {
             File file = new File(filePath);
@@ -1032,17 +1035,37 @@ public class Notes {
         if (!note.canEdit()) {
             content.setEditable(false);
         }
-        content.setAlwaysShowScrollBars(false);
+        /*
+         * 有bug 水平滚动条会闪烁出现
+         */
+//        content.setAlwaysShowScrollBars(false);
+        Listener scrollBarListener = new Listener() {
+            @Override
+            public void handleEvent(Event event) {
+                StyledText t = (StyledText) event.widget;
+                Rectangle r1 = t.getClientArea();
+                Rectangle r2 = t.computeTrim(r1.x, r1.y, r1.width, r1.height);
+                Point p = t.computeSize(SWT.DEFAULT, SWT.DEFAULT, true);
+//                t.getHorizontalBar().setVisible(r2.width <= p.x);
+                t.getVerticalBar().setVisible(r2.height <= p.y);
+                if (event.type == SWT.Modify) {
+                    t.getParent().layout(true);
+                    t.showSelection();
+                }
+            }
+        };
+        content.addListener(SWT.Resize, scrollBarListener);
+        content.addListener(SWT.Modify, scrollBarListener);
         content.setTabs(4);
         content.addVerifyKeyListener(new VerifyKeyListener() {
-            
+
             @Override
             public void verifyKey(VerifyEvent event) {
                 boolean isCtrl = (event.stateMask & SWT.CTRL) > 0;
                 if (isCtrl) {
                     if (event.keyCode == 'a') {
                         content.selectAll();
-                    } else if (event.keyCode == 'd'){
+                    } else if (event.keyCode == 'd') {
                         int currentLineIndex = content.getLineAtOffset(content.getCaretOffset());
                         int x = content.getOffsetAtLine(currentLineIndex);
                         int y = content.getLine(currentLineIndex).length();
@@ -1067,7 +1090,8 @@ public class Notes {
 //                                }
                                 saver.save(path2Save, SWT.IMAGE_PNG);
                                 String toMarkdown = "![Alt Text](" + path2Save + " \"Screenshot\")";
-                                clipboard.setContents(new String[] { toMarkdown }, new Transfer[] { TextTransfer.getInstance() });
+                                clipboard.setContents(new String[] { toMarkdown },
+                                        new Transfer[] { TextTransfer.getInstance() });
                             }
                         }
                     }
@@ -1086,7 +1110,7 @@ public class Notes {
                     }
                 }
             }
-            
+
             private int getLeadingSpaces(String line) {
                 int counter = 0;
 
@@ -1132,7 +1156,7 @@ public class Notes {
         content.setData(undoRedoEnhancement);
         Browser browser = new Browser(cTabFolder, SWT.NONE);
         browser.addMenuDetectListener(new MenuDetectListener() {
-            
+
             @Override
             public void menuDetected(MenuDetectEvent arg0) {
                 arg0.doit = false;
@@ -1194,7 +1218,7 @@ public class Notes {
             }
         });
         cTabFolder.addSelectionListener(new SelectionAdapter() {
-            
+
             @Override
             public void widgetSelected(SelectionEvent event) {
                 CTabItem selectedTab = (CTabItem) event.item;
@@ -1250,7 +1274,8 @@ public class Notes {
 //                System.out.println("scrollbar:" + contentScrollBar.getSelection());
 //                System.out.println("count" + event.count);
 //                System.out.println("MAX" +contentScrollBar.getMaximum());
-                double percent = (double) contentScrollBar.getSelection() / (double) (contentScrollBar.getMaximum() - contentScrollBar.getSize().y);
+                double percent = (double) contentScrollBar.getSelection()
+                        / (double) (contentScrollBar.getMaximum() - contentScrollBar.getSize().y);
 //                System.out.println(percent);
                 browser.setData(percent);
             }
@@ -1263,16 +1288,15 @@ public class Notes {
             cTabFolder.setSelection(1);
         }
     }
-    
+
     CTabItem getCurrentSelectedTab() {
         return tabFolder.getSelection();
     }
-    
+
     StyledText getCurrentAcitveTextEditor() {
         return (StyledText) ((CTabFolder) getCurrentSelectedTab().getControl()).getItem(1).getControl();
     }
-    
-    
+
     void doSave(Note note, StyledText content) {
         note.setContent(content.getText());
         if (note.getFile() == null) {
@@ -1297,8 +1321,7 @@ public class Notes {
         CTabItem source = cTabFolder.getItem(1);
         StyledText content = (StyledText) source.getControl();
         /*
-         * 如果在source页面保存
-         * 即未同步到display
+         * 如果在source页面保存 即未同步到display
          */
         if (cTabFolder.getSelectionIndex() == 1) {
             CTabItem display = cTabFolder.getItem(0);
@@ -1311,7 +1334,7 @@ public class Notes {
     void doSaveAs(Note note) {
         FileDialog fileDialog = new FileDialog(shell, SWT.SAVE);
         fileDialog.setFileName(note.getDisplayName());
-        fileDialog.setFilterExtensions(new String[] { "*.md"});
+        fileDialog.setFilterExtensions(new String[] { "*.md" });
         fileDialog.setOverwrite(true);
         String savePath = fileDialog.open();
         if (savePath == null) {

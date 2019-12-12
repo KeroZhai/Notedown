@@ -56,6 +56,15 @@ public class RenameNoteContributionItem extends ContributionItem {
                         null);
                 if (inputDialog.open() == InputDialog.OK) {
                     String newFileName = inputDialog.getValue().trim();
+                    if (note.getDisplayName().equals(newFileName)) {
+                        return;
+                    }
+                    for (Note temp : NotesManager.getManager().getNotes()) {
+                        if (temp.getDisplayName().equals(newFileName)) {
+                            MessageDialog.openError(notes.getShell(), "Note Name Duplicated", "Note \"" + newFileName + "\" already exists.");
+                            return;
+                        }
+                    }
                     String oldFilePath = note.getPath();
                     String newFilePath = oldFilePath.substring(0, oldFilePath.lastIndexOf(File.separator))
                             + File.separator + newFileName + ".md";
