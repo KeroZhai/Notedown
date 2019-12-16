@@ -1,21 +1,21 @@
-package com.keroz.notes.model;
+package com.keroz.notedown.model;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import com.keroz.notes.util.FileUtils;
+import com.keroz.notedown.util.FileUtils;
 
 public class Note extends NotesElement {
 
     private File file;
     private String content;
     private String path;
-    private Category category;
     private boolean opened = false;
     private boolean saved = false;
     private boolean edited = false;
     private boolean newlyEdited = false;
-    public final static Note WELCOME = new Note(new File(System.getProperty("user.dir") + "\\welcome.md")) {
+    
+    public final static Note WELCOME = new Note(null, new File(System.getProperty("user.dir") + "\\welcome.md")) {
         @Override
         public boolean isSaveAllowed() {
             return false;
@@ -28,10 +28,15 @@ public class Note extends NotesElement {
     };
 
     public static Note newNote() {
-        return new Note(null);
+        return newNote(Category.UNCATEGORIED);
+    }
+    
+    public static Note newNote(Category parent) {
+        return new Note(parent, null);
     }
 
-    public Note(File file) {
+    public Note(Category category, File file) {
+        super(category);
         this.file = file;
         if (file != null) {
             setDisplayName(getSimpleName(file.getName()));
@@ -64,7 +69,7 @@ public class Note extends NotesElement {
         int index = fileName.indexOf('.');
         return fileName.substring(0, index);
     }
-
+    
     public File getFile() {
         return file;
     }
@@ -167,6 +172,29 @@ public class Note extends NotesElement {
         } else if (!file.equals(other.file))
             return false;
         return true;
+    }
+
+    @Override
+    public void removeFromParent(boolean deleteFile) {
+        ((Category) getParent()).removeNote(this);
+        if (deleteFile) {
+            delete();
+        }
+    }
+    
+    @Override
+    public NotesElement[] getChildren() {
+        return NO_CHILDREN;
+    }
+
+    @Override
+    public String appendText(StringBuilder stringBuilder) {
+        return null;
+    }
+
+    @Override
+    public void elementChanged(ElementChangeEvent event) {
+        fireNotesElementChanged(event);
     }
     
     

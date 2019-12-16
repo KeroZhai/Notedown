@@ -1,10 +1,11 @@
-package com.keroz.notes.views;
+package com.keroz.notedown.views;
 
 import org.eclipse.jface.viewers.CellLabelProvider;
 import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.swt.graphics.Point;
 
-import com.keroz.notes.model.Note;
+import com.keroz.notedown.model.Note;
+import com.keroz.notedown.model.NotesElement;
 
 public class NotesLableProvider extends CellLabelProvider {
     
@@ -13,8 +14,8 @@ public class NotesLableProvider extends CellLabelProvider {
     public void update(ViewerCell cell) {
         Object element = cell.getElement();
         String text = "";
-        if (element instanceof Note) {
-            text = ((Note) element).getDisplayName();
+        if (element instanceof NotesElement) {
+            text = ((NotesElement) element).getDisplayName();
         }
         cell.setText(text);
     }
@@ -39,7 +40,7 @@ public class NotesLableProvider extends CellLabelProvider {
 	
 	@Override
 	public int getToolTipDisplayDelayTime(Object object) {
-	    return 1000;
+	    return 0;
 	}
 	
 }

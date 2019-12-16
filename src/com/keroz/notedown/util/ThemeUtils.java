@@ -1,6 +1,9 @@
-package com.keroz.notes.util;
+package com.keroz.notedown.util;
 
 import org.eclipse.swt.graphics.RGB;
+
+import com.keroz.notedown.Resources;
+import com.keroz.notedown.Settings;
 
 /**
  *

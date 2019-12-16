@@ -1,4 +1,4 @@
-package com.keroz.notes.model;
+package com.keroz.notedown.model;
 
 import java.util.Stack;
 
@@ -8,7 +8,6 @@ import org.eclipse.swt.custom.ExtendedModifyListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
-import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 
 /**

@@ -1,4 +1,4 @@
-package com.keroz.notes.util;
+package com.keroz.notedown;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.swt.SWT;
+
+import com.keroz.notedown.util.FileUtils;
 
 /**
  *
@@ -137,7 +139,7 @@ class Setting<T> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Setting other = (Setting) obj;
+        Setting<?> other = (Setting<?>) obj;
         if (defalutValue == null) {
             if (other.defalutValue != null)
                 return false;

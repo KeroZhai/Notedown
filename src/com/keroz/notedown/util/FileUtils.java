@@ -1,4 +1,4 @@
-package com.keroz.notes.util;
+package com.keroz.notedown.util;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

@@ -1,4 +1,4 @@
-package com.keroz.notes.util;
+package com.keroz.notedown.util;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -7,15 +7,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-import com.vladsch.flexmark.ast.Image;
-import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
+import com.keroz.notedown.Resources;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
 import com.vladsch.flexmark.ext.emoji.EmojiShortcutType;
 import com.vladsch.flexmark.ext.footnotes.FootnoteExtension;
-import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
-import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.ext.toc.TocExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
@@ -33,21 +30,12 @@ import com.vladsch.flexmark.util.data.MutableDataSet;
  */
 public class Markdown2HTML {
     
-
     private static DataHolder OPTIONS = PegdownOptionsAdapter
             .flexmarkOptions(true, Extensions.ALL, EmojiExtension.create(), TaskListExtension.create(),
                     FootnoteExtension.create())
             .toMutable().set(EmojiExtension.USE_IMAGE_TYPE, EmojiShortcutType.GITHUB)
             .set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.UNICODE_FALLBACK_TO_IMAGE);
     
-
-    /* 666 */
-    public static void main(String[] args) {
-//		System.out.println(toStyled("#Test ```Java System.out.println(); ```"));
-//		System.out.println(toToc("# Title1 ## Title 2"));
-        System.out.println(toPlain("[^1]"));
-    }
-
     public static void export(String source, String destPath) {
         if (destPath.contains(".pdf")) {
             String plain = toPlain(source);
@@ -81,16 +69,6 @@ public class Markdown2HTML {
         htmlStructBuilder.append("<html>");
         htmlStructBuilder.append("<head>");
         htmlStructBuilder.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />");
-//		StringBuilder styleContent = new StringBuilder();
-//		try {
-//			FileReader fileReader = new FileReader(CSS_PATH);
-//			BufferedReader bufferedReader = new BufferedReader(fileReader);
-//			String line;
-//			while ((line = bufferedReader.readLine()) != null) {
-//				styleContent.append(line + "\n");
-//			}
-//			bufferedReader.close();
-//			htmlStructBuilder.append(String.format("<style type=\"text/css\"> %s </style>", styleContent));
         htmlStructBuilder.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + ThemeUtils.getMarkdownCSSURI() + "\"/>");
         htmlStructBuilder
                 .append("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + Resources.CODE_CSS_URI + "\"/>");
@@ -101,48 +79,13 @@ public class Markdown2HTML {
         htmlStructBuilder.append(String.format("<body class='markdown-body'>%s</body>", toc + plain));
         htmlStructBuilder.append("</html>");
         htmlStructBuilder.append("<script src=\"" + Resources.TOC_JS_URI + "\"></script>");
-//			PrintStream printStream = new PrintStream(
-//					new FileOutputStream(new File("C:\\Users\\z21542\\Desktop\\Notes\\Test.html")), true);
-//			printStream.println(htmlStructBuilder.toString());
-//			printStream.close();
         return htmlStructBuilder.toString();
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		return "";
     }
 
     public static String toPlain(String source) {
-//	    MutableDataSet OPTIONS = new MutableDataSet().set(Parser.EXTENSIONS, Arrays.asList(
-//	            AutolinkExtension.create(),
-//	            EmojiExtension.create(),
-//	            StrikethroughExtension.create(),
-//	            TaskListExtension.create(),
-//	            TablesExtension.create()
-//	            ))
-//	            // set GitHub table parsing options
-//	            .set(TablesExtension.WITH_CAPTION, false)
-//	            .set(TablesExtension.COLUMN_SPANS, false)
-//	            .set(TablesExtension.MIN_HEADER_ROWS, 1)
-//	            .set(TablesExtension.MAX_HEADER_ROWS, 1)
-//	            .set(TablesExtension.APPEND_MISSING_COLUMNS, true)
-//	            .set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
-//	            .set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
-//	            // setup emoji shortcut options
-//	            // uncomment and change to your image directory for emoji images if you have it setup
-//	            //.set(EmojiExtension.ROOT_IMAGE_PATH, emojiInstallDirectory())
-//	            .set(EmojiExtension.USE_SHORTCUT_TYPE, EmojiShortcutType.GITHUB)
-//	            .set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.IMAGE_ONLY)
-//	            // other options
-//	            ;
-
         Parser parser = Parser.builder(OPTIONS).build();
         HtmlRenderer renderer = HtmlRenderer.builder(OPTIONS).build();
-
         Node document = parser.parse(source);
-//        System.out.println(renderer.render(document));
         return renderer.render(document);
     }
 
