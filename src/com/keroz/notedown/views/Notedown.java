@@ -507,7 +507,7 @@ public class Notedown {
     }
 
     void enableTreeDragNDrop() {
-        int ops = DND.DROP_MOVE;
+        int ops = DND.DROP_COPY | DND.DROP_MOVE;
         Transfer[] dragTrasfers = new Transfer[] { LocalSelectionTransfer.getTransfer(), FileTransfer.getInstance() };
         Transfer[] dropTransfers = new Transfer[] { LocalSelectionTransfer.getTransfer(), FileTransfer.getInstance() };
         treeViewer.addDragSupport(ops, dragTrasfers, new DragSourceListener() {
