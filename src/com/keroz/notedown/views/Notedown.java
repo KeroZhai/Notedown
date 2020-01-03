@@ -1075,6 +1075,7 @@ public class Notedown {
                         content.setCaretOffset(content.getCaretOffset() + spaces2Add.length());
                     }
                 }
+                completePairs(event.character, content);
             }
 
             private int getLeadingSpaces(String line) {
@@ -1127,6 +1128,49 @@ public class Notedown {
         }
         source.setControl(content);
         return source;
+    }
+    
+    private void completePairs(char character, StyledText styledText) {
+        char opposite = 0;
+        switch (character) {
+            case '\'':
+                opposite = '\'';
+                break;
+            case '"':
+                opposite = '"';
+                break;
+            case '(':
+                opposite = ')';
+                break;
+            case '[':
+                opposite = ']';
+                break;
+            case '{':
+                opposite = '}';
+                break;
+            case '<':
+                opposite = '>';
+                break;
+            //Chinese
+            case '‘':
+                opposite = '’';
+                break;
+            case '“':
+                opposite = '”';
+                break;
+            case '（':
+                opposite = '）';
+                break;
+            case '【':
+                opposite = '】';
+                break;
+            case '《':
+                opposite = '》';
+                break;
+            default:
+                break;
+        }
+        styledText.insert(opposite == 0 ? "" : String.valueOf(opposite));
     }
     
     void hookContextMenuForEditor(StyledText styledText) {
