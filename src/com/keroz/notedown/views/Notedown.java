@@ -650,48 +650,38 @@ public class Notedown {
                     if (!drag) {
                         return;
                     }
-                    tabFolder.setInsertMark(null, false);
-                    CTabItem item = null;
-                    CTabItem first = tabFolder.getItem(0);
-                    CTabItem last = tabFolder.getItem(tabFolder.getItemCount() - 2);
-                    if (first == last) {
-                        return;
-                    }
-                    if (p.x > last.getBounds().x + last.getBounds().width) {
-                        item = last;
-                    } else if (p.x < first.getBounds().x) {
-                        item = first;
-                    } else {
-                        if ((p.x >= current.getBounds().x + current.getBounds().width / 2)) {
-
-                            item = current;
+                    if (current != dragItem) {
+                        tabFolder.setInsertMark(null, false);
+                        CTabItem first = tabFolder.getItem(0);
+                        CTabItem last = tabFolder.getItem(tabFolder.getItemCount() - 2);
+                        int indexToInsert;
+                        int dragTabIndex = tabFolder.indexOf(dragItem);
+                        int currentTabIndex = current == null ? -1 : tabFolder.indexOf(current);
+                        
+                        if (p.x > last.getBounds().x + last.getBounds().width) {
+                            indexToInsert = tabFolder.getItemCount() - 1;
+                        } else if (p.x < first.getBounds().x) {
+                            indexToInsert = 0;
                         } else {
-                            item = tabFolder.getItem(new Point(current.getBounds().x - 1, 1));
+                            if (p.x >= current.getBounds().x && (p.x <= current.getBounds().x + current.getBounds().width / 2)) {
+                                indexToInsert = currentTabIndex;
+                            } else {
+                                indexToInsert = currentTabIndex + 1;
+                            }
+
                         }
-
-                    }
-
-                    if (item != null && (dragItem != item)) {
-
-                        int index = tabFolder.indexOf(item);
-                        int newIndex = tabFolder.indexOf(item);
-                        int oldIndex = tabFolder.indexOf(dragItem);
-                        if (newIndex != oldIndex) {
-                            boolean after = newIndex > oldIndex;
-                            index = after ? index + 1 : index/* - 1 */;
-                            index = Math.max(0, index);
-
-                            CTabItem newItem = new CTabItem(tabFolder, SWT.CLOSE, index);
+                        
+                        if (indexToInsert != dragTabIndex && (indexToInsert - 1) != dragTabIndex) {
+                            CTabItem newItem = new CTabItem(tabFolder, SWT.CLOSE, indexToInsert);
                             newItem.setText(dragItem.getText());
                             newItem.setToolTipText(dragItem.getToolTipText());
                             Control c = dragItem.getControl();
                             newItem.setControl(c);
                             newItem.setData(dragItem.getData());
                             dragItem.dispose();
-
                             tabFolder.setSelection(newItem);
-
                         }
+
                     }
                     drag = false;
                     exitDrag = false;
@@ -700,6 +690,7 @@ public class Notedown {
                     // 换鼠标形状
                     tabFolder.getShell().setCursor(cursorArrow);
                     break;
+
                 }
                 // 鼠标移动
                 case SWT.MouseMove: {
