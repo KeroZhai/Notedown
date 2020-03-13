@@ -419,7 +419,7 @@ public class Notedown {
         treeViewer.getTree().setForeground(treeForegroundColor);
         treeViewer.getTree().setBackground(treeBackgroundColor);
         treeViewer.setContentProvider(new NotesContentProvider());
-        treeViewer.setLabelProvider(new NotesLableProvider());
+        treeViewer.setLabelProvider(new NotesLabelProvider());
         ColumnViewerToolTipSupport.enableFor(treeViewer);
         treeViewer.getTree().addMouseListener(new MouseListener() {
 
@@ -1024,7 +1024,6 @@ public class Notedown {
         source.setText("Source");
         StyledText content = new StyledText(noteTabFolder, SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
         content.setEditable(note.canEdit());
-        content.setAlwaysShowScrollBars(false);
         content.setTabs(4);
         content.addVerifyKeyListener(new VerifyKeyListener() {
 
@@ -1094,6 +1093,23 @@ public class Notedown {
                 return counter;
             }
         });
+        Listener scrollBarListener = new Listener () {
+            @Override
+            public void handleEvent(Event event) {
+              StyledText t = (StyledText) event.widget;
+              Rectangle r1 = t.getClientArea();
+              Rectangle r2 = t.computeTrim(r1.x, r1.y, r1.width, r1.height);
+              Point p = t.computeSize(SWT.DEFAULT,  SWT.DEFAULT,  true);
+//              t.getHorizontalBar().setVisible(r2.width <= p.x);
+              t.getVerticalBar().setVisible(r2.height <= p.y);
+              if (event.type == SWT.Modify) {
+                t.getParent().layout(true);
+                t.showSelection();
+              }
+            }
+          };
+        content.addListener(SWT.Resize, scrollBarListener);
+        content.addListener(SWT.Modify, scrollBarListener);
         content.setFont(font);
         content.setForeground(sourceForegroundColor);
         content.setBackground(sourceBackgroundColor);
