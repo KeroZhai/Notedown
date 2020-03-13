@@ -1084,23 +1084,23 @@ public class Notedown {
                 return counter;
             }
         });
-//        Listener scrollBarListener = new Listener () {
-//            @Override
-//            public void handleEvent(Event event) {
-//              StyledText t = (StyledText) event.widget;
-//              Rectangle r1 = t.getClientArea();
-//              Rectangle r2 = t.computeTrim(r1.x, r1.y, r1.width, r1.height);
-//              Point p = t.computeSize(SWT.DEFAULT,  SWT.DEFAULT,  true);
-////              t.getHorizontalBar().setVisible(r2.width <= p.x);
-//              t.getVerticalBar().setVisible(r2.height <= p.y);
-//              if (event.type == SWT.Modify) {
-//                t.getParent().layout(true);
-//                t.showSelection();
-//              }
-//            }
-//          };
-//        content.addListener(SWT.Resize, scrollBarListener);
-//        content.addListener(SWT.Modify, scrollBarListener);
+        Listener scrollBarListener = new Listener () {
+            @Override
+            public void handleEvent(Event event) {
+              StyledText t = (StyledText) event.widget;
+              Rectangle r1 = t.getClientArea();
+              Rectangle r2 = t.computeTrim(r1.x, r1.y, r1.width, r1.height);
+              Point p = t.computeSize(SWT.DEFAULT,  SWT.DEFAULT,  true);
+//              t.getHorizontalBar().setVisible(r2.width <= p.x);
+              t.getVerticalBar().setVisible(r2.height <= p.y);
+              if (event.type == SWT.Modify) {
+                t.getParent().layout(true);
+                t.showSelection();
+              }
+            }
+          };
+        content.addListener(SWT.Resize, scrollBarListener);
+        content.addListener(SWT.Modify, scrollBarListener);
         content.setFont(font);
         content.setForeground(sourceForegroundColor);
         content.setBackground(sourceBackgroundColor);
@@ -1118,6 +1118,7 @@ public class Notedown {
                         note.setSaved(false);
                         updateTitle("*" + note.getShortenDisplayName());
                     }
+                    
                     /*
                      * pop-up undo menu
                      */
@@ -1135,6 +1136,16 @@ public class Notedown {
         }
         source.setControl(content);
         return source;
+    }
+    
+    
+    private char getNextChar(StyledText styledText) {
+        
+        try {
+            return styledText.getTextRange(styledText.getCaretOffset(), 1).charAt(0);
+        } catch (IllegalArgumentException e) {
+            return '\0';
+        }
     }
     
     private void completePairs(char character, StyledText styledText) {
