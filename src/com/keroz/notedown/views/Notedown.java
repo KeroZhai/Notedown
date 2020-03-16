@@ -458,12 +458,14 @@ public class Notedown {
         Composite editorComposite = new Composite(form, SWT.NONE);
         form.setWeights(new int[] { 20, 80 });
         editorComposite.setLayout(new FillLayout());
+        editorComposite.setRedraw(false);
         tabFolder = new CTabFolder(editorComposite, SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
         tabFolder.setForeground(globalForegroundColor);
         tabFolder.setBackground(globalBackgroundColor);
         tabFolder.setSelectionForeground(globalForegroundColor);
         tabFolder.setSelectionBackground(sourceBackgroundColor);
         CTabItem newTab = new CTabItem(tabFolder, SWT.NONE);
+        editorComposite.setRedraw(true);
         newTab.setText("+");
         newTab.setToolTipText("Create a new note");
         tabFolder.addSelectionListener(new SelectionAdapter() {
@@ -940,6 +942,7 @@ public class Notedown {
     }
 
     private void createTabForNote(Note note) {
+        tabFolder.setRedraw(false);
         CTabItem tab = new CTabItem(tabFolder, SWT.CLOSE, tabFolder.getItemCount() - 1);
         CTabFolder noteTabFolder = new CTabFolder(tabFolder, SWT.MULTI | SWT.BOTTOM);
         noteTabFolder.setRedraw(false);
@@ -956,7 +959,15 @@ public class Notedown {
         CTabItem display = createDisplayPage(noteTabFolder, note);
         CTabItem source = createSourcePage(noteTabFolder, note);
         syncPages(display, source, noteTabFolder, note);
-
+        
+        tab.setControl(noteTabFolder);
+        if (note.getFile() == null) {
+            noteTabFolder.setSelection(1);
+        } else {
+            noteTabFolder.setSelection(0);
+        }
+        
+        noteTabFolder.setRedraw(true);
         tabFolder.setSelection(tabFolder.getItemCount() - 2);
         tabFolder.setFocus();
 
@@ -970,12 +981,7 @@ public class Notedown {
 //            export.setEnabled(false);
         }
 
-        tab.setControl(noteTabFolder);
-        noteTabFolder.setRedraw(true);
-        if (note.getFile() == null) {
-            noteTabFolder.setSelection(1);
-        }
-//        noteTabFolder.setSelection(0);
+        tabFolder.setRedraw(true);
     }
 
     private CTabItem createDisplayPage(CTabFolder noteTabFolder, Note note) {
