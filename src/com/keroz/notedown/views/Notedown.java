@@ -988,13 +988,13 @@ public class Notedown {
         CTabItem display = new CTabItem(noteTabFolder, SWT.NONE);
         display.setText("Display");
         Browser browser = new Browser(noteTabFolder, SWT.NONE);
+        browser.setBackground(sourceBackgroundColor);
         browser.addMenuDetectListener(new MenuDetectListener() {
             @Override
             public void menuDetected(MenuDetectEvent arg0) {
                 arg0.doit = false;
             }
         });
-
         browser.setText(Markdown2HTML.toStyled(note.getContent()));
         browser.addLocationListener(new LocationListener() {
 
@@ -1012,7 +1012,6 @@ public class Notedown {
             }
         });
         display.setControl(browser);
-        browser.setFocus();
         return display;
     }
 
@@ -1021,7 +1020,6 @@ public class Notedown {
         source.setText("Source");
         StyledText content = new StyledText(noteTabFolder, SWT.MULTI | SWT.V_SCROLL | SWT.WRAP);
         content.setEditable(note.canEdit());
-        content.setTabs(4);
         content.addVerifyKeyListener(new VerifyKeyListener() {
 
             @Override
@@ -1069,6 +1067,12 @@ public class Notedown {
                         }
                         content.insert(spaces2Add.toString());
                         content.setCaretOffset(content.getCaretOffset() + spaces2Add.length());
+                    } else if (event.keyCode == SWT.TAB) {
+                        // Indent using 4 spaces instead tab.
+                        event.doit = false;
+                        content.insert("    ");
+                        content.setCaretOffset(content.getCaretOffset() + 4);
+
                     }
                 }
                 completePairs(event.character, content);
